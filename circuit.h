@@ -8,8 +8,6 @@ const long BAUD_RATE(57600);
 const uint32_t XBEE_TIMEOUT(10000);       //ms to wait for ack
 const uint32_t SLEEP_BEFORE_RESET(900);   //seconds to sleep before resetting the MCU if XBee initialization fails
 const uint8_t MAX_TX_FAILS(3);            //reset MCU after this many consecutive transmission failures
-gsXBee XB;                                //the XBee
-MCP9808 mcp9808(0);                       //MCP9808 temperature sensor
 
 //pin assignments
 const struct pins_t
@@ -21,8 +19,13 @@ const struct pins_t
     uint8_t xbeeSleepRQ;            //high to sleep, low to wake
     uint8_t builtinLED;
     uint8_t sensorPower;
-} 
-PIN = { 2, 3, 4, 5, 6, 8, 9 };
+    uint8_t dht22;
+}
+PIN = { 2, 3, 4, 5, 6, 8, 9, A0 };
+
+gsXBee XB;                          //the XBee
+MCP9808 mcp9808(0);                 //MCP9808 temperature sensor
+DHT dht(PIN.dht22, DHT22, 3);       //initialize DHT22 for 8MHz system clock
 
 #define xbeeSleep HIGH
 #define xbeeWake LOW
@@ -82,7 +85,7 @@ void circuit::begin(const __FlashStringHelper* fileName)
         INPUT_PULLUP,    //11  PB3  unused [MOSI]
         INPUT_PULLUP,    //12  PB4  unused [MISO]
         INPUT_PULLUP,    //13  PB5  unused [SCK]
-        INPUT_PULLUP,    //A0  PC0  unused
+        INPUT,           //A0  PC0  DHT22 temp/rh sensor, external pullup
         INPUT_PULLUP,    //A1  PC1  unused
         INPUT_PULLUP,    //A2  PC2  unused
         INPUT_PULLUP,    //A3  PC3  unused

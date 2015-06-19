@@ -46,6 +46,7 @@
 
 #include <avr/sleep.h>        //standard library
 #include <avr/wdt.h>          //standard library
+#include <DHT.h>              //http://github.com/JChristensen/DHT-sensor-library
 #include <DS3232RTC.h>        //http://github.com/JChristensen/DS3232RTC
 #include <gsXBee.h>           //http://github.com/JChristensen/gsXBee
 #include <MCP9808.h>          //http://github.com/JChristensen/MCP9808
@@ -112,15 +113,23 @@ void loop(void)
             char buf[80];
             rtcTime = RTC.get();
             digitalWrite(PIN.sensorPower, HIGH);         //power up the sensors
+            dht.begin();
             time_t alarmTime = rtcTime + XB.txWarmup;    //sleep the MCU during sensor conversion time
             RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
             RTC.alarm(ALARM_1);                          //clear RTC interrupt flag
             Circuit.gotoSleep(true);                     //sleep while the sensors do their thing, leave boost on
             mcp9808.read();                              //read the temperature sensor
+            int dT, dH;                                  //DHT22 temperature, humidity
+            if ( !dht.getData( &dT, &dH ) )              //read the DHT22
+            {
+                dT = dH = -9999;
+                Serial << F("DHT error\n");
+            }
             digitalWrite(PIN.sensorPower, LOW);          //power sensors down
 
             //build the payload
-            sprintf(buf, "&seq=%u&u=%lu&tRaw=%i&vBat=%i&vReg=%i", ++seqNbr, rtcTime - startupTime, mcp9808.tAmbient, Circuit.vBat, Circuit.vReg );
+            sprintf(buf, "&seq=%u&u=%lu&tRaw=%i&dT=%i&dH=%i&vBat=%i&vReg=%i",
+                ++seqNbr, rtcTime - startupTime, mcp9808.tAmbient, dT, dH, Circuit.vBat, Circuit.vReg );
 
             //print date to serial monitor
             rtcTime = RTC.get();
@@ -165,7 +174,7 @@ void loop(void)
         break;
 
     case SEND_TIMESYNC:
-        //if ( hour(rtcTime) == 0 && minute(rtcTime) == 58 )        //time sync once per day
+        //if ( hour(rtcTime) == 23 && minute(rtcTime) == 58 )        //time sync once per day
         if ( minute(rtcTime) == 58 )                              //time sync once per hour
         //if ( minute(rtcTime) % 10 == 0 )                          //time sync every 10 minutes
         {

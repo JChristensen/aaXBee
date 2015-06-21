@@ -186,8 +186,8 @@ void loop(void)
         break;
 
     case SEND_TIMESYNC:
-        //if ( hour(rtcTime) == 23 && minute(rtcTime) == 58 )        //time sync once per day
-        if ( minute(rtcTime) == 58 )                              //time sync once per hour
+        if ( hour(rtcTime) == 23 && minute(rtcTime) == 58 )        //time sync once per day
+        //if ( minute(rtcTime) == 58 )                              //time sync once per hour
         //if ( minute(rtcTime) % 10 == 0 )                          //time sync every 10 minutes
         {
             XB.requestTimeSync(rtcTime);

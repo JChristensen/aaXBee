@@ -45,7 +45,7 @@
 //  SP Sleep Period               0x7D0
 
 //uncomment next two lines if a DHT22 is used
-//#define hasDHT
+//#define HAS_DHT22
 //#include <DHT.h>              //http://github.com/JChristensen/DHT-sensor-library
 
 #include <avr/sleep.h>        //standard library
@@ -116,7 +116,7 @@ void loop(void)
             char buf[80];
             rtcTime = RTC.get();
             digitalWrite(PIN.sensorPower, HIGH);         //power up the sensors
-#ifdef hasDHT
+#ifdef HAS_DHT22
             dht.begin();
 #endif
             time_t alarmTime = rtcTime + XB.txWarmup;    //sleep the MCU during sensor conversion time
@@ -124,7 +124,7 @@ void loop(void)
             RTC.alarm(ALARM_1);                          //clear RTC interrupt flag
             Circuit.gotoSleep(true);                     //sleep while the sensors do their thing, leave boost on
             mcp9808.read();                              //read the temperature sensor
-#ifdef hasDHT
+#ifdef HAS_DHT22
             int dT, dH;                                  //DHT22 temperature, humidity
             if ( !dht.getData( &dT, &dH ) )              //read the DHT22
             {
@@ -135,7 +135,7 @@ void loop(void)
             digitalWrite(PIN.sensorPower, LOW);          //power sensors down
 
             //build the payload
-#ifdef hasDHT
+#ifdef HAS_DHT22
             sprintf(buf, "&seq=%u&u=%lu&tRaw=%i&dT=%i&dH=%i&vBat=%i&vReg=%i",
                 ++seqNbr, rtcTime - startupTime, mcp9808.tAmbient, dT, dH, Circuit.vBat, Circuit.vReg );
 #else
@@ -215,8 +215,8 @@ void loop(void)
     }
 }
 
-//interrupt from the RTC alarm. don't need to do anything, it's just to wake the MCU.
+//interrupt from the RTC alarm.
 ISR(INT1_vect)
 {
+    //nothing to do here, the interrupt is just to wake the MCU.
 }
-

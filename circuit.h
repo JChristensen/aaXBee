@@ -25,7 +25,7 @@ PIN = { 2, 3, 4, 5, 6, 8, 9, A0 };
 
 gsXBee XB;                          //the XBee
 MCP9808 mcp9808(0);                 //MCP9808 temperature sensor
-#ifdef hasDHT
+#ifdef HAS_DHT22
 DHT dht(PIN.dht22, DHT22, 3);       //initialize DHT22 for 8MHz system clock
 #endif
 
@@ -35,7 +35,7 @@ DHT dht(PIN.dht22, DHT22, 3);       //initialize DHT22 for 8MHz system clock
 #define xbeeWait HIGH
 
 //MCU system clock prescaler values, used to set CLKPS[3:0]
-enum clockSpeed_t { CLOCK_8MHZ = 0, CLOCK_1MHZ = 3 };    
+enum clockSpeed_t { CLOCK_8MHZ = 0, CLOCK_1MHZ = 3 };
 
 //function prototypes
 void printDateTime(time_t t, bool newLine = true);
@@ -87,7 +87,7 @@ void circuit::begin(const __FlashStringHelper* fileName)
         INPUT_PULLUP,    //11  PB3  unused [MOSI]
         INPUT_PULLUP,    //12  PB4  unused [MISO]
         INPUT_PULLUP,    //13  PB5  unused [SCK]
-#ifdef hasDHT
+#ifdef HAS_DHT22
         INPUT,           //A0  PC0  DHT22 temp/rh sensor, external pullup
 #else
         INPUT_PULLUP,    //A0  PC0  unused
@@ -118,7 +118,7 @@ void circuit::begin(const __FlashStringHelper* fileName)
     RTC.writeRTC( RTC_STATUS, RTC.readRTC(RTC_STATUS) & ~( _BV(BB32KHZ) | _BV(EN32KHZ) ) );   //no 32kHz output either
     if ( RTC.oscStopped() )                     //ensure the oscillator is running
     {
-        RTC.set(rtcTime); 
+        RTC.set(rtcTime);
     }
 
     if ( !XB.begin(Serial) )
@@ -145,10 +145,11 @@ void circuit::gotoSleep(bool enableRegulator)
     Serial.flush();
     Serial.end();
     digitalWrite(PIN.builtinLED, LOW);     //LED off
-    pinMode(SCL, INPUT);                   //tri-state the i2c bus   
+    pinMode(SCL, INPUT);                   //tri-state the i2c bus
     pinMode(SDA, INPUT);
 
-    if (!enableRegulator) {
+    if (!enableRegulator)
+    {
         digitalWrite(PIN.sensorPower, LOW);   //sensor power off
         peripPower(false);                    //peripheral power off
         systemClock(CLOCK_1MHZ);
@@ -171,7 +172,7 @@ void circuit::gotoSleep(bool enableRegulator)
     sei();                         //ensure interrupts enabled so we can wake up again
     sleep_cpu();                   //go to sleep
     sleep_disable();               //wake up here
-    ADCSRA = adcsra;               //restore ADCSRA    
+    ADCSRA = adcsra;               //restore ADCSRA
 
     if (!enableRegulator) systemClock(CLOCK_8MHZ);
     Serial.begin(BAUD_RATE);
@@ -327,4 +328,3 @@ void printI00(int val, char delim)
     Serial << _DEC(val) << delim;
     return;
 }
-

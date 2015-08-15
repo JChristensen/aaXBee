@@ -283,7 +283,7 @@ void circuit::sleepReset(void)
     EICRA = _BV(ISC11);               //interrupt on falling edge
     EIFR = _BV(INTF1);                //clear the interrupt flag (setting ISCnn can cause an interrupt)
     EIMSK = _BV(INT1);                //enable interrupt
-    Circuit.gotoSleep();
+    gotoSleep();
     XB.mcuReset();
 }
 

@@ -32,8 +32,8 @@
 //  BD Baud Rate    57600 [6]
 //  AP API Enable   2
 //  SM Sleep Mode   Pin Hibernate [1]
-//  D5 DIO5 Config  0 (disables ASSOC LED)
-//  P0 PIO10 Config 0 (disables RSSI LED)
+//  D5 DIO5 Config  4 (disables ASSOC LED)
+//  P0 PIO10 Config 4 (disables RSSI LED)
 //  PO Polling Rate 1 (poll the parent device faster so we can sleep sooner)
 //
 //Because this node sleeps for relatively long intervals, parent devices
@@ -45,8 +45,8 @@
 //  SP Sleep Period               0x7D0
 
 //uncomment next two lines if a DHT22 is used
-//#define HAS_DHT22
-//#include <DHT.h>              //http://github.com/JChristensen/DHT-sensor-library
+#define HAS_DHT22
+#include <DHT.h>              //http://github.com/JChristensen/DHT-sensor-library
 
 #include <avr/sleep.h>        //standard library
 #include <avr/wdt.h>          //standard library
@@ -136,10 +136,10 @@ void loop(void)
 
             //build the payload
 #ifdef HAS_DHT22
-            sprintf(buf, "&seq=%u&u=%lu&tRaw=%i&dT=%i&dH=%i&vBat=%i&vReg=%i",
+            sprintf(buf, "&s=%u&u=%lu&t=%i&d=%i&h=%i&b=%i&r=%i",
                 ++seqNbr, rtcTime - startupTime, mcp9808.tAmbient, dT, dH, Circuit.vBat, Circuit.vReg );
 #else
-            sprintf(buf, "&seq=%u&u=%lu&tRaw=%i&vBat=%i&vReg=%i",
+            sprintf(buf, "&s=%u&u=%lu&t=%i&b=%i&r=%i",
                 ++seqNbr, rtcTime - startupTime, mcp9808.tAmbient, Circuit.vBat, Circuit.vReg );
 #endif
 

@@ -44,9 +44,13 @@
 //  SN Number of Sleep Periods    0x10
 //  SP Sleep Period               0x7D0
 
+//uncomment next two lines if a ChipCap2 is used
+#define HAS_CC2
+#include <ChipCap2.h>         //http://github.com/JChristensen/ChipCap2
+
 //uncomment next two lines if a DHT22 is used
-#define HAS_DHT22
-#include <DHT.h>              //http://github.com/JChristensen/DHT-sensor-library
+//#define HAS_DHT22
+//#include <DHT.h>              //http://github.com/JChristensen/DHT-sensor-library
 
 #include <avr/sleep.h>        //standard library
 #include <avr/wdt.h>          //standard library
@@ -55,7 +59,7 @@
 #include <MCP9808.h>          //http://github.com/JChristensen/MCP9808
 #include <Streaming.h>        //http://arduiniana.org/libraries/streaming/
 #include <Time.h>             //http://playground.arduino.cc/Code/Time
-#include <Wire.h>             //standard library
+#include <Wire.h>             //http://arduino.cc/en/Reference/Wire
 #include <XBee.h>             //http://github.com/andrewrapp/xbee-arduino
 #include "circuit.h"          //part of this sketch
 
@@ -124,6 +128,20 @@ void loop(void)
             RTC.alarm(ALARM_1);                          //clear RTC interrupt flag
             Circuit.gotoSleep(true);                     //sleep while the sensors do their thing, leave boost on
             mcp9808.read();                              //read the temperature sensor
+#ifdef HAS_CC2
+            int dT, dH;                                  //temperature, humidity
+            cc2Status_t cc2stat = cc2.read();
+            if ( cc2stat == CC2_VALID )
+            {
+                dT = cc2.cRaw();
+                dH = cc2.rhRaw();
+            }
+            else
+            {
+                dT = dH = -9999;
+                Serial << F("CC2 error ") << cc2stat << endl;
+            }
+#endif
 #ifdef HAS_DHT22
             int dT, dH;                                  //DHT22 temperature, humidity
             if ( !dht.getData( &dT, &dH ) )              //read the DHT22
@@ -134,8 +152,12 @@ void loop(void)
 #endif
             digitalWrite(PIN.sensorPower, LOW);          //power sensors down
 
-            //build the payload
-#ifdef HAS_DHT22
+            //build the payload -- assume CC2 *or* DHT22, not both
+            //note -- should check cc2stat
+#ifdef HAS_CC2
+            sprintf(buf, "&s=%u&u=%lu&t=%i&d=%i&h=%i&b=%i&r=%i",
+                ++seqNbr, rtcTime - startupTime, mcp9808.tAmbient, dT, dH, Circuit.vBat, Circuit.vReg );
+#elif HAS_DHT22
             sprintf(buf, "&s=%u&u=%lu&t=%i&d=%i&h=%i&b=%i&r=%i",
                 ++seqNbr, rtcTime - startupTime, mcp9808.tAmbient, dT, dH, Circuit.vBat, Circuit.vReg );
 #else

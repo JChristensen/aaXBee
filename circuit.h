@@ -25,6 +25,9 @@ PIN = { 2, 3, 4, 5, 6, 8, 9, A0 };
 
 gsXBee XB;                          //the XBee
 MCP9808 mcp9808(0);                 //MCP9808 temperature sensor
+#ifdef HAS_CC2
+ChipCap2 cc2;
+#endif
 #ifdef HAS_DHT22
 DHT dht(PIN.dht22, DHT22, 3);       //initialize DHT22 for 8MHz system clock
 #endif

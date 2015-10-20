@@ -116,6 +116,7 @@ void circuit::begin(const __FlashStringHelper* fileName)
 
     //rtc initialization
     time_t rtcTime = RTC.get();
+    Serial << millis() << F(" RTC Time ");
     printDateTime(rtcTime);
     RTC.squareWave(SQWAVE_NONE);                //no square waves please
     RTC.writeRTC( RTC_STATUS, RTC.readRTC(RTC_STATUS) & ~( _BV(BB32KHZ) | _BV(EN32KHZ) ) );   //no 32kHz output either

@@ -130,13 +130,18 @@ void circuit::begin(const __FlashStringHelper* fileName)
         sleepReset();
     }
 
-    XB.setSyncCallback(processTimeSync);  //initial time sync, verify communication with parent node
+    //initial time sync, verify communication with parent node
+    XB.disassocReset = false;    //the library sets this to true, we don't want an immediate reset on disassociate yet.
+    XB.setSyncCallback(processTimeSync);
     XB.requestTimeSync( RTC.get() );
-    if ( XB.waitFor(RX_TIMESYNC, XBEE_TIMEOUT) == READ_TIMEOUT )
+    
+    //if no response (read timeout expires) or if the XBee disassociates, take a long sleep before resetting.
+    if ( XB.waitFor(RX_TIMESYNC, XBEE_TIMEOUT) == READ_TIMEOUT || XB.assocStatus != 0x00 )
     {
         Serial << millis() << F(" Initial time sync failed\n");
         sleepReset();
     }
+    XB.disassocReset = true;    //initial time sync successful, now OK to reset immediately on disassociate.
 }
 
 //enter power down mode, optionally leave boost regulator enabled

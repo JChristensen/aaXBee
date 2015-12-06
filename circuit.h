@@ -25,10 +25,10 @@ PIN = { 2, 3, 4, 5, 6, 8, 9, A0 };
 
 gsXBee XB;                          //the XBee
 MCP9808 mcp9808(0);                 //MCP9808 temperature sensor
-#ifdef HAS_CC2
+#ifdef _CHIPCAP2_H
 ChipCap2 cc2;
 #endif
-#ifdef HAS_DHT22
+#ifdef DHT_H
 DHT dht(PIN.dht22, DHT22, 3);       //initialize DHT22 for 8MHz system clock
 #endif
 
@@ -43,10 +43,10 @@ enum clockSpeed_t { CLOCK_8MHZ = 0, CLOCK_1MHZ = 3 };
 //function prototypes
 void printDateTime(time_t t, bool newLine = true);
 void processTimeSync(time_t utc);
-void printDateTime(time_t t, bool newLine);
 void printTime(time_t t);
 void printDate(time_t t);
 void printI00(int val, char delim);
+void printTimes(time_t rtc, time_t alarm);  //for debug
 
 class circuit
 {
@@ -90,7 +90,7 @@ void circuit::begin(const __FlashStringHelper* fileName)
         INPUT_PULLUP,    //11  PB3  unused [MOSI]
         INPUT_PULLUP,    //12  PB4  unused [MISO]
         INPUT_PULLUP,    //13  PB5  unused [SCK]
-#ifdef HAS_DHT22
+#ifdef DHT_H
         INPUT,           //A0  PC0  DHT22 temp/rh sensor, external pullup
 #else
         INPUT_PULLUP,    //A0  PC0  unused
@@ -187,7 +187,8 @@ void circuit::gotoSleep(bool enableRegulator)
     Serial.begin(BAUD_RATE);
     peripPower(true);              //peripheral power on (rtc)
     delay(5);                      //a little ramp-up time
-    Serial << endl << millis() << F(" MCU wake\n");
+    Serial << endl << millis() << F(" MCU wake ");
+    printDateTime(RTC.get());
 }
 
 //enables the boost regulator to provide higher voltage and increases the system clock frequency,
@@ -298,9 +299,14 @@ void circuit::sleepReset(void)
 
 void processTimeSync(time_t utc)
 {
+    time_t rtcTime = RTC.get();
     setTime(utc);
     RTC.set(utc);
-    Serial << millis() << F(" Time Sync RX\n");
+    Serial << millis() << F(" Time Sync RX, RTC was ");
+    printTime(rtcTime);
+    Serial << F(" Set to ");
+    printTime(utc);
+    Serial << endl;
 }
 
 //helper & utility functions
@@ -336,4 +342,13 @@ void printI00(int val, char delim)
     if (val < 10) Serial << '0';
     Serial << _DEC(val) << delim;
     return;
+}
+
+void printTimes(time_t rtc, time_t alarm)
+{
+    Serial << millis() << F(" RTC ");
+    printTime(rtc);
+    Serial << F(" Alarm ");
+    printTime(alarm);
+    Serial << endl;
 }

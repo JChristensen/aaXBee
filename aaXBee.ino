@@ -1,3 +1,9 @@
+//To do:
+//1. Add FR command to init sequence (this in the gsXBee library) -- DONE
+//2. Review sleep sequences, RTC alarm interrupt enable. -- Added RTC.alarmInterrupt call.
+//                    ... need to look at moving code to gotoSleep() and/or look at the MCU interrupt setup code (not consistent)
+//3. Look at using symbols from the libraries for conditional compilation. -- DONE
+
 /*-----------------------------------------------------------------------------*
  * Double-A XBee Sensor Node for GroveStreams Wireless Sensor Network.         *
  * A low-power Arduino-based wireless sensor node than runs on two AA cells.   *
@@ -44,12 +50,10 @@
 //  SN Number of Sleep Periods    0x10
 //  SP Sleep Period               0x7D0
 
-//uncomment next two lines if a ChipCap2 is used
-#define HAS_CC2
+//uncomment next line if a ChipCap2 is used
 #include <ChipCap2.h>         //http://github.com/JChristensen/ChipCap2
 
-//uncomment next two lines if a DHT22 is used
-//#define HAS_DHT22
+//uncomment next line if a DHT22 is used
 //#include <DHT.h>              //http://github.com/JChristensen/DHT-sensor-library
 
 #include <avr/sleep.h>        //standard library
@@ -104,6 +108,7 @@ void loop(void)
             RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
             RTC.alarm(ALARM_1);                   //clear RTC interrupt flag
             RTC.alarmInterrupt(ALARM_1, true);    //enable alarm interrupts
+            printTimes(rtcTime, alarmTime);
 
             EICRA = _BV(ISC11);               //interrupt on falling edge
             EIFR = _BV(INTF1);                //clear the interrupt flag (setting ISCnn can cause an interrupt)
@@ -120,15 +125,17 @@ void loop(void)
             char buf[80];
             rtcTime = RTC.get();
             digitalWrite(PIN.sensorPower, HIGH);         //power up the sensors
-#ifdef HAS_DHT22
+#ifdef DHT_H
             dht.begin();
 #endif
             time_t alarmTime = rtcTime + XB.txWarmup;    //sleep the MCU during sensor conversion time
             RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
             RTC.alarm(ALARM_1);                          //clear RTC interrupt flag
+            RTC.alarmInterrupt(ALARM_1, true);           //enable alarm interrupts
+            printTimes(rtcTime, alarmTime);
             Circuit.gotoSleep(true);                     //sleep while the sensors do their thing, leave boost on
             mcp9808.read();                              //read the temperature sensor
-#ifdef HAS_CC2
+#ifdef _CHIPCAP2_H
             int dT, dH;                                  //temperature, humidity
             cc2Status_t cc2stat = cc2.read();
             if ( cc2stat == CC2_VALID )
@@ -142,7 +149,7 @@ void loop(void)
                 Serial << F("CC2 error ") << cc2stat << endl;
             }
 #endif
-#ifdef HAS_DHT22
+#ifdef DHT_H
             int dT, dH;                                  //DHT22 temperature, humidity
             if ( !dht.getData( &dT, &dH ) )              //read the DHT22
             {
@@ -154,21 +161,16 @@ void loop(void)
 
             //build the payload -- assume CC2 *or* DHT22, not both
             //note -- should check cc2stat
-#ifdef HAS_CC2
+#ifdef _CHIPCAP2_H
             sprintf(buf, "&s=%u&u=%lu&t=%i&d=%i&h=%i&b=%i&r=%i",
                 ++seqNbr, rtcTime - startupTime, mcp9808.tAmbient, dT, dH, Circuit.vBat, Circuit.vReg );
-#elif HAS_DHT22
+#elif DHT_H
             sprintf(buf, "&s=%u&u=%lu&t=%i&d=%i&h=%i&b=%i&r=%i",
                 ++seqNbr, rtcTime - startupTime, mcp9808.tAmbient, dT, dH, Circuit.vBat, Circuit.vReg );
 #else
             sprintf(buf, "&s=%u&u=%lu&t=%i&b=%i&r=%i",
                 ++seqNbr, rtcTime - startupTime, mcp9808.tAmbient, Circuit.vBat, Circuit.vReg );
 #endif
-
-            //print date to serial monitor
-            rtcTime = RTC.get();
-            Serial << millis() << ' ';
-            printDateTime(rtcTime);
 
             //Send the data
             Circuit.xbeeEnable(true);
@@ -231,6 +233,7 @@ void loop(void)
             RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
             RTC.alarm(ALARM_1);                   //clear RTC interrupt flag
             RTC.alarmInterrupt(ALARM_1, true);    //enable alarm interrupts
+            printTimes(rtcTime, alarmTime);
         }
         STATE = SEND_DATA;
         break;

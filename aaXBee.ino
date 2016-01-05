@@ -100,7 +100,7 @@ void loop(void)
     case INIT:
         {
             //calculate the first alarm
-            rtcTime = RTC.get();
+            rtcTime = rtcGet();
             startupTime = rtcTime;
             time_t alarmTime = rtcTime - rtcTime % (XB.txInterval * 60) + XB.txOffset * 60 + XB.txSec - XB.txWarmup;
             if ( alarmTime <= rtcTime + 5 ) alarmTime += XB.txInterval * 60;
@@ -123,7 +123,7 @@ void loop(void)
         {                                    //read sensors, send data
             static uint16_t seqNbr;
             char buf[80];
-            rtcTime = RTC.get();
+            rtcTime = rtcGet();
             digitalWrite(PIN.sensorPower, HIGH);         //power up the sensors
 #ifdef DHT_H
             dht.begin();
@@ -185,7 +185,7 @@ void loop(void)
     case WAIT_ACK:
         if ( millis() - msTX >= XBEE_TIMEOUT )
         {
-            Serial << millis() << F(" XBee ACK timeout\n");
+            Serial << millis() << F("\tXBee ACK timeout\n");
             STATE = SEND_TIMESYNC;
             break;
         }
@@ -200,7 +200,7 @@ void loop(void)
                 }
                 else if ( ++txFails >= MAX_TX_FAILS )
                 {
-                    Serial << millis() << F(" Too many TX failures\n");
+                    Serial << millis() << F("\tToo many TX failures\n");
                     XB.mcuReset();
                 }
                 STATE = SEND_TIMESYNC;
@@ -217,7 +217,7 @@ void loop(void)
             XB.requestTimeSync(rtcTime);
             if ( XB.waitFor(RX_TIMESYNC, XBEE_TIMEOUT) == READ_TIMEOUT )    //wait for the sync response
             {
-                Serial << millis() << F(" Time sync timeout\n");
+                Serial << millis() << F("\tTime sync timeout\n");
             }
         }
         STATE = SET_ALARM;
@@ -227,7 +227,7 @@ void loop(void)
         while ( XB.read() != NO_TRAFFIC );        //get any other traffic
         Circuit.xbeeEnable(false);                //done with the XBee, put it to sleep
         {
-            rtcTime = RTC.get();
+            rtcTime = rtcGet();
             time_t alarmTime = rtcTime - rtcTime % (XB.txInterval * 60) + XB.txOffset * 60 + XB.txSec - XB.txWarmup;
             if ( alarmTime <= rtcTime + 5 ) alarmTime += XB.txInterval * 60;
             RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);

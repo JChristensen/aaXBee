@@ -47,6 +47,7 @@ void printTime(time_t t);
 void printDate(time_t t);
 void printI00(int val, char delim);
 void printTimes(time_t rtc, time_t alarm);  //for debug
+time_t rtcGet(void);                        //for debug
 
 class circuit
 {
@@ -115,8 +116,8 @@ void circuit::begin(const __FlashStringHelper* fileName)
     xbeeEnable(true);
 
     //rtc initialization
-    time_t rtcTime = RTC.get();
-    Serial << millis() << F(" RTC Time ");
+    time_t rtcTime = rtcGet();
+    Serial << millis() << F("\tRTC Time ");
     printDateTime(rtcTime);
     RTC.squareWave(SQWAVE_NONE);                //no square waves please
     RTC.writeRTC( RTC_STATUS, RTC.readRTC(RTC_STATUS) & ~( _BV(BB32KHZ) | _BV(EN32KHZ) ) );   //no 32kHz output either
@@ -127,19 +128,19 @@ void circuit::begin(const __FlashStringHelper* fileName)
 
     if ( !XB.begin(Serial) )
     {
-        Serial << millis() << F(" XBee initialization failed\n");
+        Serial << millis() << F("\tXBee initialization failed\n");
         sleepReset();
     }
 
     //initial time sync, verify communication with parent node
     XB.disassocReset = false;    //the library sets this to true, we don't want an immediate reset on disassociate yet.
     XB.setSyncCallback(processTimeSync);
-    XB.requestTimeSync( RTC.get() );
+    XB.requestTimeSync( rtcGet() );
     
     //if no response (read timeout expires) or if the XBee disassociates, take a long sleep before resetting.
     if ( XB.waitFor(RX_TIMESYNC, XBEE_TIMEOUT) == READ_TIMEOUT || XB.assocStatus != 0x00 )
     {
-        Serial << millis() << F(" Initial time sync failed\n");
+        Serial << millis() << F("\tInitial time sync failed\n");
         sleepReset();
     }
     XB.disassocReset = true;    //initial time sync successful, now OK to reset immediately on disassociate.
@@ -150,7 +151,7 @@ void circuit::gotoSleep(bool enableRegulator)
 {
     if (!enableRegulator) vReg = readVcc();     //read regulator voltage before shutdown
     xbeeEnable(false);
-    Serial << millis() << F(" MCU sleep\n");
+    Serial << millis() << F("\tMCU sleep\n");
     Serial.flush();
     Serial.end();
     digitalWrite(PIN.builtinLED, LOW);     //LED off
@@ -187,8 +188,8 @@ void circuit::gotoSleep(bool enableRegulator)
     Serial.begin(BAUD_RATE);
     peripPower(true);              //peripheral power on (rtc)
     delay(5);                      //a little ramp-up time
-    Serial << endl << millis() << F(" MCU wake ");
-    printDateTime(RTC.get());
+    Serial << endl << millis() << F("\tMCU wake ");
+    printDateTime(rtcGet());
 }
 
 //enables the boost regulator to provide higher voltage and increases the system clock frequency,
@@ -225,14 +226,14 @@ void circuit::xbeeEnable(boolean enable)
         digitalWrite(PIN.xbeeSleepRQ, xbeeWake);           //ask the XBee to wake up
         while ( digitalRead(PIN.xbeeCTS) == xbeeWait );    //wait for the XBee to wake up
         xbeeAwake = true;
-        Serial << millis() << F(" XBee wake\n");
+        Serial << millis() << F("\tXBee wake\n");
     }
     else if ( xbeeAwake )                                  //don't bother if it's already sleeping
     {
         digitalWrite(PIN.xbeeSleepRQ, xbeeSleep);          //ask the XBee to go to sleep
         while ( digitalRead(PIN.xbeeCTS) == xbeeSend );    //wait for the XBee to sleep
         xbeeAwake = false;
-        Serial << millis() << F(" XBee sleep\n");
+        Serial << millis() << F("\tXBee sleep\n");
     }
 }
 
@@ -283,7 +284,7 @@ int circuit::readBattery(void)
 //used after initialization failures, etc.
 void circuit::sleepReset(void)
 {
-    time_t rtcTime = RTC.get();
+    time_t rtcTime = rtcGet();
     time_t alarmTime = rtcTime + SLEEP_BEFORE_RESET;
     //set RTC alarm to match on hours, minutes, seconds
     RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
@@ -299,10 +300,10 @@ void circuit::sleepReset(void)
 
 void processTimeSync(time_t utc)
 {
-    time_t rtcTime = RTC.get();
+    time_t rtcTime = rtcGet();
     setTime(utc);
     RTC.set(utc);
-    Serial << millis() << F(" Time Sync RX, RTC was ");
+    Serial << millis() << F("\tTime Sync RX, RTC was ");
     printTime(rtcTime);
     Serial << F(" Set to ");
     printTime(utc);
@@ -346,9 +347,20 @@ void printI00(int val, char delim)
 
 void printTimes(time_t rtc, time_t alarm)
 {
-    Serial << millis() << F(" RTC ");
+    Serial << millis() << F("\tRTC ");
     printTime(rtc);
     Serial << F(" Alarm ");
     printTime(alarm);
     Serial << endl;
+}
+
+//temporary function for debug
+time_t rtcGet(void)
+{
+    time_t t = RTC.get();
+    if ( t == 0 )
+    {
+        Serial << millis() << F("\tRTC error\t") << RTC.errCode << endl;
+    }
+    return t;
 }

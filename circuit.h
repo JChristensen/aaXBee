@@ -290,6 +290,7 @@ void circuit::sleepReset(void)
     RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
     RTC.alarm(ALARM_1);                   //clear RTC interrupt flag
     RTC.alarmInterrupt(ALARM_1, true);    //enable alarm interrupts
+    printTimes(rtcTime, alarmTime);
 
     EICRA = _BV(ISC11);               //interrupt on falling edge
     EIFR = _BV(INTF1);                //clear the interrupt flag (setting ISCnn can cause an interrupt)
@@ -357,10 +358,19 @@ void printTimes(time_t rtc, time_t alarm)
 //temporary function for debug
 time_t rtcGet(void)
 {
-    time_t t = RTC.get();
-    if ( t == 0 )
+    uint8_t tries = 0;
+    while ( ++tries <= 3 )
     {
-        Serial << millis() << F("\tRTC error\t") << RTC.errCode << endl;
+        time_t t = RTC.get();
+        if ( t == 0 )
+        {
+            Serial << millis() << F("\tRTC error\t") << RTC.errCode << endl;
+            delay(10);
+        }
+        else
+        {
+            return t;
+        }
     }
-    return t;
+    XB.mcuReset();
 }

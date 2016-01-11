@@ -365,7 +365,7 @@ time_t rtcGet(void)
         if ( t == 0 )
         {
             Serial << millis() << F("\tRTC error\t") << RTC.errCode << endl;
-            delay(10);
+            delay(5);
         }
         else
         {
@@ -374,3 +374,4 @@ time_t rtcGet(void)
     }
     XB.mcuReset();
 }
+

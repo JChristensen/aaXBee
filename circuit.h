@@ -109,7 +109,7 @@ void circuit::begin(const __FlashStringHelper* fileName)
     }
     systemClock(CLOCK_8MHZ);
     peripPower(true);                             //peripheral power on
-    mcp9808.begin(twiClock400kHz);
+    mcp9808.begin(twiClock100kHz);
     Serial.begin(BAUD_RATE);
     Serial << endl << F("Double-A XBee Sensor Node\n");
     Serial << fileName << F(" " __DATE__ " " __TIME__ "\n");
@@ -365,7 +365,7 @@ time_t rtcGet(void)
         if ( t == 0 )
         {
             Serial << millis() << F("\tRTC error\t") << RTC.errCode << endl;
-            delay(5);
+//            delay(5);
         }
         else
         {

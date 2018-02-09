@@ -109,7 +109,7 @@ void circuit::begin(const __FlashStringHelper* fileName)
     }
     systemClock(CLOCK_8MHZ);
     peripPower(true);                             //peripheral power on
-    mcp9808.begin(twiClock100kHz);
+    mcp9808.begin(MCP9808::twiClock100kHz);
     Serial.begin(BAUD_RATE);
     Serial << endl << F("Double-A XBee Sensor Node\n");
     Serial << fileName << F(" " __DATE__ " " __TIME__ "\n");

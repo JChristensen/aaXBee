@@ -210,9 +210,7 @@ void loop(void)
         break;
 
     case SEND_TIMESYNC:
-        if ( hour(rtcTime) == 23 && minute(rtcTime) == 58 )        //time sync once per day
-        //if ( minute(rtcTime) == 58 )                              //time sync once per hour
-        //if ( minute(rtcTime) % 10 == 0 )                          //time sync every 10 minutes
+        if ( day(rtcTime) != day(Circuit.lastTimesync) )        //time sync once per day
         {
             XB.requestTimeSync(rtcTime);
             if ( XB.waitFor(RX_TIMESYNC, XBEE_TIMEOUT) == READ_TIMEOUT )    //wait for the sync response

@@ -9,6 +9,12 @@ const uint32_t XBEE_TIMEOUT(10000);       //ms to wait for ack
 const uint32_t SLEEP_BEFORE_RESET(900);   //seconds to sleep before resetting the MCU if XBee initialization fails
 const uint8_t MAX_TX_FAILS(3);            //reset MCU after this many consecutive transmission failures
 
+// these are also defined in the DS3232RTC library but need to be defined here too because they're
+// not accessible outside the library. Library should be changed so the constants are in class scope.
+#define RTC_STATUS 0x0F
+#define BB32KHZ 6
+#define EN32KHZ 3
+
 //pin assignments
 const struct pins_t
 {
@@ -64,8 +70,9 @@ public:
     int readVcc(void);
     int readBattery(void);
 
-    int vBat;       //battery and regulator voltages
+    int vBat;               // battery and regulator voltages
     int vReg;
+    time_t lastTimesync;    // the last time the RTC was set
 };
 
 circuit Circuit;
@@ -304,6 +311,7 @@ void processTimeSync(time_t utc)
     time_t rtcTime = rtcGet();
     setTime(utc);
     RTC.set(utc);
+    Circuit.lastTimesync = utc;
     Serial << millis() << F("\tTime Sync RX, RTC was ");
     printTime(rtcTime);
     Serial << F(" Set to ");
@@ -373,5 +381,5 @@ time_t rtcGet(void)
         }
     }
     XB.mcuReset();
+    return 0;
 }
-

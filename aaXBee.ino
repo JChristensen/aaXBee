@@ -40,7 +40,7 @@
 //  SM Sleep Mode   Pin Hibernate [1]
 //  D5 DIO5 Config  4 (disables ASSOC LED)
 //  P0 PIO10 Config 4 (disables RSSI LED)
-//  PO Polling Rate 1 (poll the parent device faster so we can sleep sooner)
+//  PO Polling Rate 0 (poll the parent device faster so we can sleep sooner)
 //
 //Because this node sleeps for relatively long intervals, parent devices
 //in the network need their child poll timeout set long enough to maintain
@@ -243,4 +243,3 @@ ISR(INT1_vect)
 {
     //nothing to do here, the interrupt is just to wake the MCU.
 }
-

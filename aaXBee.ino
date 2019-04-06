@@ -70,9 +70,9 @@
 //trap the MCUSR value after reset to determine the reset source
 //and ensure the watchdog is reset. this code does not work with a bootloader.
 uint8_t mcusr __attribute__ ((section (".noinit")));
-void wdt_init(void) __attribute__((naked)) __attribute__((section(".init3")));
+void wdt_init() __attribute__((naked)) __attribute__((section(".init3")));
 
-void wdt_init(void)
+void wdt_init()
 {
     mcusr = MCUSR;
     MCUSR = 0;        //must clear WDRF in MCUSR in order to clear WDE in WDTCSR
@@ -80,12 +80,12 @@ void wdt_init(void)
     wdt_disable();
 }
 
-void setup(void)
+void setup()
 {
     Circuit.begin( F(__FILE__) );
 }
 
-void loop(void)
+void loop()
 {
     static time_t rtcTime;
     static time_t startupTime;

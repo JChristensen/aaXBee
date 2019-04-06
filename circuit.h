@@ -53,22 +53,22 @@ void printTime(time_t t);
 void printDate(time_t t);
 void printI00(int val, char delim);
 void printTimes(time_t rtc, time_t alarm);  //for debug
-time_t rtcGet(void);                        //for debug
+time_t rtcGet();                            //for debug
 
 class circuit
 {
 private:
-    void sleepReset(void);
+    void sleepReset();
 
 public:
-    circuit();
+    circuit() {}
     void begin(const __FlashStringHelper* fileName);
     void gotoSleep(bool enableRegulator = false);
     void systemClock(clockSpeed_t clkpr);
-    void xbeeEnable(boolean enable);
+    void xbeeEnable(bool enable);
     void peripPower(bool enable);
-    int readVcc(void);
-    int readBattery(void);
+    int readVcc();
+    int readBattery();
 
     int vBat;               // battery and regulator voltages
     int vReg;
@@ -76,10 +76,6 @@ public:
 };
 
 circuit Circuit;
-
-circuit::circuit()
-{
-}
 
 void circuit::begin(const __FlashStringHelper* fileName)
 {
@@ -224,7 +220,7 @@ void circuit::systemClock(clockSpeed_t clkpr)
     }
 }
 
-void circuit::xbeeEnable(boolean enable)
+void circuit::xbeeEnable(bool enable)
 {
     static bool xbeeAwake;      //flag to avoid waking the XBee if already awake, or sleeping it if already sleeping
 
@@ -262,7 +258,7 @@ void circuit::peripPower(bool enable)
 
 //read 1.1V reference against AVcc
 //from http://code.google.com/p/tinkerit/wiki/SecretVoltmeter
-int circuit::readVcc(void)
+int circuit::readVcc()
 {
     ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
     delay(2);                                 //Vref settling time
@@ -275,7 +271,7 @@ int circuit::readVcc(void)
 //resistors R4 and R5 form the voltage divider.
 //NOTE: When switching from the DEFAULT to the INTERNAL 1.1V ADC reference, it can take
 //5-10ms for Aref to stabilize because it is held up by a 100nF capacitor on the board.
-int circuit::readBattery(void)
+int circuit::readBattery()
 {
     const int R4 = 47500;    //ohms
     const int R5 = 10000;    //ohms
@@ -289,7 +285,7 @@ int circuit::readBattery(void)
 
 //take a long sleep to conserve power, then reset.
 //used after initialization failures, etc.
-void circuit::sleepReset(void)
+void circuit::sleepReset()
 {
     time_t rtcTime = rtcGet();
     time_t alarmTime = rtcTime + SLEEP_BEFORE_RESET;
@@ -364,7 +360,7 @@ void printTimes(time_t rtc, time_t alarm)
 }
 
 //temporary function for debug
-time_t rtcGet(void)
+time_t rtcGet()
 {
     uint8_t tries = 0;
     while ( ++tries <= 3 )

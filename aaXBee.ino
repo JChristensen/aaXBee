@@ -70,7 +70,7 @@
 //trap the MCUSR value after reset to determine the reset source
 //and ensure the watchdog is reset. this code does not work with a bootloader.
 uint8_t mcusr __attribute__ ((section (".noinit")));
-void wdt_init() __attribute__((naked)) __attribute__((section(".init3")));
+void wdt_init() __attribute__((naked)) __attribute__((used)) __attribute__((section(".init3")));
 
 void wdt_init()
 {

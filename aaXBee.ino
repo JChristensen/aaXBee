@@ -62,7 +62,7 @@
 #include <gsXBee.h>           //http://github.com/JChristensen/gsXBee
 #include <MCP9808.h>          //http://github.com/JChristensen/MCP9808
 #include <Streaming.h>        //http://arduiniana.org/libraries/streaming/
-#include <Time.h>             //http://playground.arduino.cc/Code/Time
+#include <TimeLib.h>          //http://playground.arduino.cc/Code/Time
 #include <Wire.h>             //http://arduino.cc/en/Reference/Wire
 #include <XBee.h>             //http://github.com/andrewrapp/xbee-arduino
 #include "circuit.h"          //part of this sketch
@@ -105,9 +105,9 @@ void loop()
             time_t alarmTime = rtcTime - rtcTime % (XB.txInterval * 60) + XB.txOffset * 60 + XB.txSec - XB.txWarmup;
             if ( alarmTime <= rtcTime + 5 ) alarmTime += XB.txInterval * 60;
             //set RTC alarm to match on hours, minutes, seconds
-            RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
-            RTC.alarm(ALARM_1);                   //clear RTC interrupt flag
-            RTC.alarmInterrupt(ALARM_1, true);    //enable alarm interrupts
+            myRTC.setAlarm(DS3232RTC::ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
+            myRTC.alarm(DS3232RTC::ALARM_1);                   //clear RTC interrupt flag
+            myRTC.alarmInterrupt(DS3232RTC::ALARM_1, true);    //enable alarm interrupts
             printTimes(rtcTime, alarmTime);
 
             EICRA = _BV(ISC11);               //interrupt on falling edge
@@ -129,9 +129,9 @@ void loop()
             dht.begin();
 #endif
             time_t alarmTime = rtcTime + XB.txWarmup;    //sleep the MCU during sensor conversion time
-            RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
-            RTC.alarm(ALARM_1);                          //clear RTC interrupt flag
-            RTC.alarmInterrupt(ALARM_1, true);           //enable alarm interrupts
+            myRTC.setAlarm(DS3232RTC::ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
+            myRTC.alarm(DS3232RTC::ALARM_1);                          //clear RTC interrupt flag
+            myRTC.alarmInterrupt(DS3232RTC::ALARM_1, true);           //enable alarm interrupts
             printTimes(rtcTime, alarmTime);
             Circuit.gotoSleep(true);                     //sleep while the sensors do their thing, leave boost on
             mcp9808.read();                              //read the temperature sensor
@@ -228,9 +228,9 @@ void loop()
             rtcTime = rtcGet();
             time_t alarmTime = rtcTime - rtcTime % (XB.txInterval * 60) + XB.txOffset * 60 + XB.txSec - XB.txWarmup;
             if ( alarmTime <= rtcTime + 5 ) alarmTime += XB.txInterval * 60;
-            RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
-            RTC.alarm(ALARM_1);                   //clear RTC interrupt flag
-            RTC.alarmInterrupt(ALARM_1, true);    //enable alarm interrupts
+            myRTC.setAlarm(DS3232RTC::ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
+            myRTC.alarm(DS3232RTC::ALARM_1);                   //clear RTC interrupt flag
+            myRTC.alarmInterrupt(DS3232RTC::ALARM_1, true);    //enable alarm interrupts
             printTimes(rtcTime, alarmTime);
         }
         STATE = SEND_DATA;

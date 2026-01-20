@@ -11,9 +11,9 @@ const uint8_t MAX_TX_FAILS(3);            //reset MCU after this many consecutiv
 
 // these are also defined in the DS3232RTC library but need to be defined here too because they're
 // not accessible outside the library. Library should be changed so the constants are in class scope.
-#define RTC_STATUS 0x0F
-#define BB32KHZ 6
-#define EN32KHZ 3
+//#define RTC_STATUS 0x0F
+//#define BB32KHZ 6
+//#define EN32KHZ 3
 
 //pin assignments
 const struct pins_t
@@ -29,6 +29,7 @@ const struct pins_t
 }
 PIN = { 2, 3, 4, 5, 6, 8, 9, A0 };
 
+DS3232RTC myRTC;
 gsXBee XB;                          //the XBee
 MCP9808 mcp9808(0);                 //MCP9808 temperature sensor
 #ifdef _CHIPCAP2_H
@@ -52,6 +53,7 @@ void processTimeSync(time_t utc);
 void printTime(time_t t);
 void printDate(time_t t);
 void printI00(int val, char delim);
+void dumpRTC();
 void printTimes(time_t rtc, time_t alarm);  //for debug
 time_t rtcGet();                            //for debug
 
@@ -111,7 +113,9 @@ void circuit::begin(const __FlashStringHelper* fileName)
         pinMode(i, pinModes[i]);
     }
     systemClock(CLOCK_8MHZ);
-    peripPower(true);                             //peripheral power on
+    peripPower(true);       // peripheral power on
+    delay(100);             // let the power settle before starting the RTC
+    myRTC.begin();
     mcp9808.begin(MCP9808::twiClock100kHz);
     Serial.begin(BAUD_RATE);
     Serial << endl << F("Double-A XBee Sensor Node\n");
@@ -122,15 +126,14 @@ void circuit::begin(const __FlashStringHelper* fileName)
     time_t rtcTime = rtcGet();
     Serial << millis() << F("\tRTC Time ");
     printDateTime(rtcTime);
-    RTC.squareWave(SQWAVE_NONE);                //no square waves please
-    RTC.writeRTC( RTC_STATUS, RTC.readRTC(RTC_STATUS) & ~( _BV(BB32KHZ) | _BV(EN32KHZ) ) );   //no 32kHz output either
-    if ( RTC.oscStopped() )                     //ensure the oscillator is running
-    {
-        RTC.set(rtcTime);
+
+    myRTC.squareWave(DS3232RTC::SQWAVE_NONE);   //no square waves please
+    myRTC.writeRTC( DS3232RTC::DS32_STATUS, myRTC.readRTC(DS3232RTC::DS32_STATUS) & ~( _BV(DS3232RTC::DS32_BB32KHZ) | _BV(DS3232RTC::DS32_EN32KHZ) ) );   //no 32kHz output either
+    if ( myRTC.oscStopped(true) ) {     // ensure the oscillator is running
+        myRTC.set(rtcTime);
     }
 
-    if ( !XB.begin(Serial) )
-    {
+    if ( !XB.begin(Serial) ) {
         Serial << millis() << F("\tXBee initialization failed\n");
         sleepReset();
     }
@@ -141,8 +144,7 @@ void circuit::begin(const __FlashStringHelper* fileName)
     XB.requestTimeSync( rtcGet() );
     
     //if no response (read timeout expires) or if the XBee disassociates, take a long sleep before resetting.
-    if ( XB.waitFor(RX_TIMESYNC, XBEE_TIMEOUT) == READ_TIMEOUT || XB.assocStatus != 0x00 )
-    {
+    if ( XB.waitFor(RX_TIMESYNC, XBEE_TIMEOUT) == READ_TIMEOUT || XB.assocStatus != 0x00 ) {
         Serial << millis() << F("\tInitial time sync failed\n");
         sleepReset();
     }
@@ -290,9 +292,9 @@ void circuit::sleepReset()
     time_t rtcTime = rtcGet();
     time_t alarmTime = rtcTime + SLEEP_BEFORE_RESET;
     //set RTC alarm to match on hours, minutes, seconds
-    RTC.setAlarm(ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
-    RTC.alarm(ALARM_1);                   //clear RTC interrupt flag
-    RTC.alarmInterrupt(ALARM_1, true);    //enable alarm interrupts
+    myRTC.setAlarm(DS3232RTC::ALM1_MATCH_HOURS, second(alarmTime), minute(alarmTime), hour(alarmTime), 0);
+    myRTC.alarm(DS3232RTC::ALARM_1);                   //clear RTC interrupt flag
+    myRTC.alarmInterrupt(DS3232RTC::ALARM_1, true);    //enable alarm interrupts
     printTimes(rtcTime, alarmTime);
 
     EICRA = _BV(ISC11);               //interrupt on falling edge
@@ -306,7 +308,7 @@ void processTimeSync(time_t utc)
 {
     time_t rtcTime = rtcGet();
     setTime(utc);
-    RTC.set(utc);
+    myRTC.set(utc);
     Circuit.lastTimesync = utc;
     Serial << millis() << F("\tTime Sync RX, RTC was ");
     printTime(rtcTime);
@@ -365,10 +367,10 @@ time_t rtcGet()
     uint8_t tries = 0;
     while ( ++tries <= 3 )
     {
-        time_t t = RTC.get();
+        time_t t = myRTC.get();
         if ( t == 0 )
         {
-            Serial << millis() << F("\tRTC error\t") << RTC.errCode << endl;
+            Serial << millis() << F("\tRTC error\t") << myRTC.errCode << endl;
 //            delay(5);
         }
         else
@@ -378,4 +380,18 @@ time_t rtcGet()
     }
     XB.mcuReset();
     return 0;
+}
+
+// dump the RTC registers
+void dumpRTC()
+{
+    Serial << "RTC registers\n";
+    for (uint8_t a=0; a<19; ++a) {
+        uint8_t d = myRTC.readRTC(a);
+        Serial << F("0x");
+        if (a < 16) Serial << '0';
+        Serial << _HEX(a) << F(" 0x");
+        if (d < 16) Serial << '0';
+        Serial << _HEX(d) << endl;
+    }
 }

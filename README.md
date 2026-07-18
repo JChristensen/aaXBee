@@ -5,7 +5,7 @@ Jack Christensen
 Apr 2019  
 
 ## License
-Arduino Double-A XBee Sensor Node Sketch Copyright (C) 2019 Jack Christensen GNU GPL v3.0
+Arduino Double-A XBee Sensor Node Sketch Copyright (C) 2015-2026 Jack Christensen GNU GPL v3.0
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License v3.0 as published by the Free Software Foundation.
 

@@ -114,12 +114,12 @@ void circuit::begin(const __FlashStringHelper* fileName)
     }
     systemClock(CLOCK_8MHZ);
     peripPower(true);       // peripheral power on
-    delay(100);             // let the power settle before starting the RTC
-    myRTC.begin();
-    mcp9808.begin(MCP9808::twiClock100kHz);
+    delay(100);             // let the power settle before continuing
     Serial.begin(BAUD_RATE);
     Serial << endl << F("Double-A XBee Sensor Node\n");
-    Serial << fileName << F(" " __DATE__ " " __TIME__ "\n");
+    Serial << F(__DATE__ " " __TIME__ "\n") << fileName << endl;
+    myRTC.begin();
+    mcp9808.begin(MCP9808::twiClock100kHz);
     xbeeEnable(true);
 
     //rtc initialization
